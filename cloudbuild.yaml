@@ -1,0 +1,38 @@
+steps:
+  # Step 1: Build Docker image tagged with commit SHA
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - build
+      - -t
+      - asia-south1-docker.pkg.dev/$PROJECT_ID/x-agent/x-agent:$COMMIT_SHA
+      - -t
+      - asia-south1-docker.pkg.dev/$PROJECT_ID/x-agent/x-agent:latest
+      - .
+
+  # Step 2: Push both tags to Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - push
+      - --all-tags
+      - asia-south1-docker.pkg.dev/$PROJECT_ID/x-agent/x-agent
+
+  # Step 3: Deploy to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - x-agent
+      - --image=asia-south1-docker.pkg.dev/$PROJECT_ID/x-agent/x-agent:$COMMIT_SHA
+      - --region=asia-south1
+      - --platform=managed
+      - --allow-unauthenticated
+      - --port=3000
+      - --set-secrets=GEMINI_API_KEY=GEMINI_API_KEY:latest,TELEGRAM_BOT_TOKEN=TELEGRAM_BOT_TOKEN:latest,TELEGRAM_CHAT_ID=TELEGRAM_CHAT_ID:latest,SCHEDULER_SECRET=SCHEDULER_SECRET:latest
+
+images:
+  - asia-south1-docker.pkg.dev/$PROJECT_ID/x-agent/x-agent:$COMMIT_SHA
+  - asia-south1-docker.pkg.dev/$PROJECT_ID/x-agent/x-agent:latest
+
+options:
+  logging: CLOUD_LOGGING_ONLY
