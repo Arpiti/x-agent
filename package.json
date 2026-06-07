@@ -1,0 +1,27 @@
+{
+  "name": "x-agent",
+  "version": "1.0.0",
+  "description": "Personal X content agent — NestJS + Claude + Telegram",
+  "scripts": {
+    "build": "nest build",
+    "start": "node dist/main",
+    "start:dev": "nest start --watch",
+    "lint": "eslint \"{src,apps,libs,test}/**/*.ts\""
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.21.0",
+    "@nestjs/common": "^10.0.0",
+    "@nestjs/config": "^3.0.0",
+    "@nestjs/core": "^10.0.0",
+    "@nestjs/platform-express": "^10.0.0",
+    "reflect-metadata": "^0.1.13",
+    "rxjs": "^7.8.1",
+    "telegraf": "^4.16.3"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^10.0.0",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.1.3"
+  }
+}

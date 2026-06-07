@@ -28,6 +28,5 @@ Thumbs.db
 .dockerignore
 
 # GCP credentials — never commit these
-*.json
 gcloud/
 service-account*.json
