@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { VertexAI, GenerativeModel } from '@google-cloud/vertexai';
+import { GoogleGenAI } from '@google/genai';
 import { VOICE_GUIDE } from './prompts/voice-guide';
 import { ALGORITHM_CONTEXT } from './prompts/algorithm-context';
 
@@ -51,28 +51,17 @@ const PILLAR_TOPIC_SEEDS: Record<Pillar, string[]> = {
 @Injectable()
 export class ContentService {
   private readonly logger = new Logger(ContentService.name);
-  private readonly model: GenerativeModel;
+  private readonly ai: GoogleGenAI;
+  private readonly modelName: string;
 
   constructor(private configService: ConfigService) {
     const project = this.configService.get<string>('gemini.project');
     const location = this.configService.get<string>('gemini.location');
-    const modelName = this.configService.get<string>('gemini.model');
+    this.modelName = this.configService.get<string>('gemini.model');
 
-    if (!project) {
-      this.logger.error('GOOGLE_CLOUD_PROJECT is not set — content generation will fail');
-    }
+    this.logger.log(`Google GenAI init | project: ${project} | location: ${location} | model: ${this.modelName}`);
 
-    this.logger.log(`Vertex AI init | project: ${project} | location: ${location} | model: ${modelName}`);
-
-    const vertexAI = new VertexAI({ project, location });
-    this.model = vertexAI.getGenerativeModel({
-      model: modelName,
-      systemInstruction: `${VOICE_GUIDE}\n\n${ALGORITHM_CONTEXT}`,
-      generationConfig: {
-        maxOutputTokens: 8192,
-        responseMimeType: 'application/json',
-      },
-    });
+    this.ai = new GoogleGenAI({ vertexai: true, project, location });
   }
 
   async generateDrafts(inputTopic?: string, inputPillar?: Pillar): Promise<DraftBatch> {
@@ -138,14 +127,20 @@ Return ONLY valid JSON in this exact shape:
     let rawText: string;
 
     try {
-      const result = await this.model.generateContent({
-        contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+      const result = await this.ai.models.generateContent({
+        model: this.modelName,
+        contents: userPrompt,
+        config: {
+          systemInstruction: `${VOICE_GUIDE}\n\n${ALGORITHM_CONTEXT}`,
+          maxOutputTokens: 8192,
+          responseMimeType: 'application/json',
+        },
       });
-      rawText = (result.response.candidates?.[0]?.content?.parts?.[0]?.text ?? '').trim();
-      this.logger.debug(`Vertex AI raw response (${rawText.length} chars): ${rawText.slice(0, 200)}...`);
+      rawText = (result.text ?? '').trim();
+      this.logger.debug(`GenAI raw response (${rawText.length} chars): ${rawText.slice(0, 200)}...`);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      this.logger.error(`Vertex AI API call failed: ${msg}`, err instanceof Error ? err.stack : undefined);
+      this.logger.error(`GenAI API call failed: ${msg}`, err instanceof Error ? err.stack : undefined);
       throw new Error(`Vertex AI error: ${msg}`);
     }
 

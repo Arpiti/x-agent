@@ -9,7 +9,7 @@
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\""
   },
   "dependencies": {
-    "@google-cloud/vertexai": "^1.12.0",
+    "@google/genai": "^1.52.0",
     "@nestjs/common": "^10.0.0",
     "@nestjs/config": "^3.0.0",
     "@nestjs/core": "^10.0.0",
