@@ -3,7 +3,7 @@ export default () => ({
   gemini: {
     project: process.env.GOOGLE_CLOUD_PROJECT,
     location: process.env.GOOGLE_CLOUD_LOCATION || 'asia-south1',
-    model: process.env.GEMINI_MODEL || 'gemini-3.5-flash',
+    model: process.env.GEMINI_MODEL || 'gemini-3.1-flash',
   },
   telegram: {
     botToken: process.env.TELEGRAM_BOT_TOKEN,
