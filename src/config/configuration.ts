@@ -1,8 +1,9 @@
 export default () => ({
   port: parseInt(process.env.PORT, 10) || 3000,
   gemini: {
-    apiKey: process.env.GEMINI_API_KEY,
-    model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
+    project: process.env.GOOGLE_CLOUD_PROJECT,
+    location: process.env.GOOGLE_CLOUD_LOCATION || 'asia-south1',
+    model: process.env.GEMINI_MODEL || 'gemini-3.5-flash',
   },
   telegram: {
     botToken: process.env.TELEGRAM_BOT_TOKEN,

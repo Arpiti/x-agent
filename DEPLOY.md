@@ -21,14 +21,19 @@
 export PROJECT_ID=your-gcp-project-id
 export REGION=asia-south1   # Mumbai — closest to Gurugram
 
-# Enable required APIs
-gcloud services enable run.googleapis.com secretmanager.googleapis.com cloudscheduler.googleapis.com artifactregistry.googleapis.com --project=$PROJECT_ID
+# Enable required APIs (added aiplatform for Vertex AI)
+gcloud services enable run.googleapis.com secretmanager.googleapis.com cloudscheduler.googleapis.com artifactregistry.googleapis.com aiplatform.googleapis.com --project=$PROJECT_ID
 
-# Store secrets
-echo -n "YOUR_GEMINI_API_KEY" | gcloud secrets create GEMINI_API_KEY --data-file=- --project=$PROJECT_ID
+# Store secrets (no Gemini API key needed — Vertex AI uses service account auth)
 echo -n "YOUR_BOT_TOKEN" | gcloud secrets create TELEGRAM_BOT_TOKEN --data-file=- --project=$PROJECT_ID
 echo -n "YOUR_CHAT_ID" | gcloud secrets create TELEGRAM_CHAT_ID --data-file=- --project=$PROJECT_ID
 echo -n "$(openssl rand -hex 32)" | gcloud secrets create SCHEDULER_SECRET --data-file=- --project=$PROJECT_ID
+
+# Grant Cloud Run's default service account permission to call Vertex AI
+export PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format="value(projectNumber)")
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:${PROJECT_NUMBER}-compute@developer.gserviceaccount.com" \
+  --role="roles/aiplatform.user"
 ```
 
 ---
@@ -64,7 +69,7 @@ gcloud run deploy x-agent \
   --allow-unauthenticated \
   --port=3000 \
   --max-instances=1 \
-  --set-secrets="GEMINI_API_KEY=GEMINI_API_KEY:latest,TELEGRAM_BOT_TOKEN=TELEGRAM_BOT_TOKEN:latest,TELEGRAM_CHAT_ID=TELEGRAM_CHAT_ID:latest,SCHEDULER_SECRET=SCHEDULER_SECRET:latest" \
+  --set-secrets="TELEGRAM_BOT_TOKEN=TELEGRAM_BOT_TOKEN:latest,TELEGRAM_CHAT_ID=TELEGRAM_CHAT_ID:latest,SCHEDULER_SECRET=SCHEDULER_SECRET:latest" \
   --project=$PROJECT_ID
 ```
 

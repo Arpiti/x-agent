@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { GoogleGenerativeAI, GenerativeModel } from '@google/generative-ai';
+import { VertexAI, GenerativeModel } from '@google-cloud/vertexai';
 import { VOICE_GUIDE } from './prompts/voice-guide';
 import { ALGORITHM_CONTEXT } from './prompts/algorithm-context';
 
@@ -54,17 +54,18 @@ export class ContentService {
   private readonly model: GenerativeModel;
 
   constructor(private configService: ConfigService) {
-    const apiKey = this.configService.get<string>('gemini.apiKey');
+    const project = this.configService.get<string>('gemini.project');
+    const location = this.configService.get<string>('gemini.location');
     const modelName = this.configService.get<string>('gemini.model');
 
-    if (!apiKey) {
-      this.logger.error('GEMINI_API_KEY is not set — content generation will fail');
+    if (!project) {
+      this.logger.error('GOOGLE_CLOUD_PROJECT is not set — content generation will fail');
     }
 
-    this.logger.log(`Gemini init | model: ${modelName} | key: ${apiKey ? 'SET' : 'MISSING'}`);
+    this.logger.log(`Vertex AI init | project: ${project} | location: ${location} | model: ${modelName}`);
 
-    const genAI = new GoogleGenerativeAI(apiKey ?? '');
-    this.model = genAI.getGenerativeModel({
+    const vertexAI = new VertexAI({ project, location });
+    this.model = vertexAI.getGenerativeModel({
       model: modelName,
       systemInstruction: `${VOICE_GUIDE}\n\n${ALGORITHM_CONTEXT}`,
       generationConfig: {
@@ -137,13 +138,15 @@ Return ONLY valid JSON in this exact shape:
     let rawText: string;
 
     try {
-      const result = await this.model.generateContent(userPrompt);
-      rawText = result.response.text().trim();
-      this.logger.debug(`Gemini raw response (${rawText.length} chars): ${rawText.slice(0, 200)}...`);
+      const result = await this.model.generateContent({
+        contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+      });
+      rawText = (result.response.candidates?.[0]?.content?.parts?.[0]?.text ?? '').trim();
+      this.logger.debug(`Vertex AI raw response (${rawText.length} chars): ${rawText.slice(0, 200)}...`);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      this.logger.error(`Gemini API call failed: ${msg}`, err instanceof Error ? err.stack : undefined);
-      throw new Error(`Gemini API error: ${msg}`);
+      this.logger.error(`Vertex AI API call failed: ${msg}`, err instanceof Error ? err.stack : undefined);
+      throw new Error(`Vertex AI error: ${msg}`);
     }
 
     // Strip markdown code fences — some model versions ignore responseMimeType
@@ -154,7 +157,7 @@ Return ONLY valid JSON in this exact shape:
       batch = JSON.parse(jsonText);
     } catch (err) {
       this.logger.error(`JSON parse failed. Raw response was:\n${rawText}`);
-      throw new Error(`Invalid JSON from Gemini. Raw: ${rawText.slice(0, 300)}`);
+      throw new Error(`Invalid JSON from Vertex AI. Raw: ${rawText.slice(0, 300)}`);
     }
 
     // Warn on singles that exceed X's 280-char limit

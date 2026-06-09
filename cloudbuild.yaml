@@ -28,7 +28,7 @@ steps:
       - --platform=managed
       - --allow-unauthenticated
       - --port=3000
-      - --set-secrets=GEMINI_API_KEY=GEMINI_API_KEY:latest,TELEGRAM_BOT_TOKEN=TELEGRAM_BOT_TOKEN:latest,TELEGRAM_CHAT_ID=TELEGRAM_CHAT_ID:latest,SCHEDULER_SECRET=SCHEDULER_SECRET:latest
+      - --set-secrets=TELEGRAM_BOT_TOKEN=TELEGRAM_BOT_TOKEN:latest,TELEGRAM_CHAT_ID=TELEGRAM_CHAT_ID:latest,SCHEDULER_SECRET=SCHEDULER_SECRET:latest
 
 images:
   - asia-south1-docker.pkg.dev/$PROJECT_ID/x-agent/x-agent:$COMMIT_SHA
